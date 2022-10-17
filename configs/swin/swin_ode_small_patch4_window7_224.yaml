@@ -8,7 +8,7 @@ MODEL:
     NUM_HEADS: [ 3, 6, 12, 24 ]
     WINDOW_SIZE: 7
   SWINODE:
-    STEP: 2
+    RK_STEP: 2
     LEARNABLE_TYPE : 'ema' # ['gated', 'ema', 'standard']
 TRAIN:
   BASE_LR: 5e-4
