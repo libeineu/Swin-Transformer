@@ -47,7 +47,7 @@ class LearnableDenseLayerHistory(BaseLayerHistory):
         return 'n_layers={layer_num}, '.format(**self.__dict__)
 
     def add(self, layer):
-
+        
         assert self.normalize_before is True, "This dlcl only supports the pre-Norm Swin Transformer"
         layer = self.layer_norms[self.layer_idx](layer)
         self.layer_idx += 1
@@ -56,16 +56,13 @@ class LearnableDenseLayerHistory(BaseLayerHistory):
 
     def pop(self):
         assert len(self.layers) > 0
-        #layers_dropout = F.dropout(torch.stack(self.layers, 0), p=self.dense_dropout, training=self.training)
-        #ret = (layers_dropout * self.weight[self.count -1, : self.count].view(-1, 1, 1, 1)).sum(0)
-        ret = (torch.stack(self.layers, 0) * self.weight[self.count - 1, : self.count].view(-1, 1, 1, 1)).sum(0)
-        if self.count == 1 or self.normalize_before:
-            return ret
-        return self.layer_norms[self.count - 2](ret)
+        ret = (torch.stack(self.layers, 0) * self.weight[self.layer_idx - 1, : self.layer_idx].view(-1, 1, 1, 1)).sum(0)
+
+        return ret
 
     def clean(self):
         self.sum = None
-        self.count = 0
+        self.layer_idx = 0
         self.layers = []
 
 

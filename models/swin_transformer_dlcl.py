@@ -426,8 +426,8 @@ class BasicLayer(nn.Module):
             if self.use_checkpoint:
                 x = checkpoint.checkpoint(blk, x)
             else:
-                if self.history is not None:
-                    x = self.history.pop()
+                if self.block_history is not None:
+                    x = self.block_history.pop()
                 x = blk(x)
 
                 if self.block_history is not None:
