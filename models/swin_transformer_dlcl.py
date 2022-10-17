@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
+from .layer_history import CreateLayerHistory
 try:
     import os, sys
 
@@ -392,6 +393,7 @@ class BasicLayer(nn.Module):
         self.input_resolution = input_resolution
         self.depth = depth
         self.use_checkpoint = use_checkpoint
+        self.block_history = CreateLayerHistory(self.depth, self.dim)
 
         # build blocks
         self.blocks = nn.ModuleList([
@@ -412,12 +414,27 @@ class BasicLayer(nn.Module):
         else:
             self.downsample = None
 
-    def forward(self, x):            
+    def forward(self, x):
+        
+        # linear multi-step method from ODE perspective, aka DLCL.
+        if self.block_history is not None:
+            self.block_history.clean()
+            # to store the block input
+            self.block_history.add(x)
+                
         for blk in self.blocks:
             if self.use_checkpoint:
                 x = checkpoint.checkpoint(blk, x)
             else:
+                if self.history is not None:
+                    x = self.history.pop()
                 x = blk(x)
+
+                if self.block_history is not None:
+                    self.block_history.add(x)
+
+        if self.block_history is not None:
+            x = self.block_history.pop()
 
         if self.downsample is not None:
             x = self.downsample(x)
@@ -483,7 +500,7 @@ class PatchEmbed(nn.Module):
         return flops
 
 
-class SwinTransformer(nn.Module):
+class SwinTransformerDLCL(nn.Module):
     r""" Swin Transformer
         A PyTorch impl of : `Swin Transformer: Hierarchical Vision Transformer using Shifted Windows`  -
           https://arxiv.org/pdf/2103.14030
