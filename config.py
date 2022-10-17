@@ -79,6 +79,11 @@ _C.MODEL.SWIN.QK_SCALE = None
 _C.MODEL.SWIN.APE = False
 _C.MODEL.SWIN.PATCH_NORM = True
 
+# Swin Transformer ODE parameters
+_C.MODEL.SWINODE = CN()
+_C.MODEL.SWINODE.RK_STEP = 2
+_C.MODEL.SWINODE.LEARNABLE_TYPE = 'ema'
+
 # Swin Transformer V2 parameters
 _C.MODEL.SWINV2 = CN()
 _C.MODEL.SWINV2.PATCH_SIZE = 4
