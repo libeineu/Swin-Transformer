@@ -1,0 +1,15 @@
+MODEL:
+  TYPE: swin_ode
+  NAME: swin_ode_small_patch4_window7_224
+  DROP_PATH_RATE: 0.3
+  SWIN:
+    EMBED_DIM: 96
+    DEPTHS: [ 2, 2, 18, 2 ]
+    NUM_HEADS: [ 3, 6, 12, 24 ]
+    WINDOW_SIZE: 7
+  SWINODE:
+    RK_STEP: 2
+    LEARNABLE_TYPE : 'ema' # ['gated', 'ema', 'standard']
+TRAIN:
+  BASE_LR: 5e-4
+  WARMUP_EPOCHS: 20
