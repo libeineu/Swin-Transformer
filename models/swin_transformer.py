@@ -5,11 +5,11 @@
 # Written by Ze Liu
 # --------------------------------------------------------
 
+
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
-
 try:
     import os, sys
 
@@ -412,12 +412,13 @@ class BasicLayer(nn.Module):
         else:
             self.downsample = None
 
-    def forward(self, x):
+    def forward(self, x):            
         for blk in self.blocks:
             if self.use_checkpoint:
                 x = checkpoint.checkpoint(blk, x)
             else:
                 x = blk(x)
+
         if self.downsample is not None:
             x = self.downsample(x)
         return x
