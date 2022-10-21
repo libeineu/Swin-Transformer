@@ -89,6 +89,7 @@ def main(config):
     logger.info(str(model))
     if int(os.environ["RANK"]) == 0:
         wandb.init(project="swin-ode", name=f"{config.MODEL.TYPE}/{config.MODEL.NAME}")
+        wandb.config = config
     
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     logger.info(f"number of params: {n_parameters}")
@@ -223,6 +224,15 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
                 f'grad_norm {norm_meter.val:.4f} ({norm_meter.avg:.4f})\t'
                 f'loss_scale {scaler_meter.val:.4f} ({scaler_meter.avg:.4f})\t'
                 f'mem {memory_used:.0f}MB')
+            
+            if int(os.environ["RANK"]) == 0:
+                wandb.log({
+                    "epoch": epoch,
+                    "loss_meter": loss_meter.val,
+                    "loss_avg": loss_meter.avg,
+                    "grad_norm": norm_meter.val,
+                    "time": batch_time.val
+                })
     epoch_time = time.time() - start
     logger.info(f"EPOCH {epoch} training takes {datetime.timedelta(seconds=int(epoch_time))}")
 
