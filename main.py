@@ -12,7 +12,7 @@ import random
 import argparse
 import datetime
 import numpy as np
-
+import wandb
 import torch
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
@@ -87,7 +87,8 @@ def main(config):
     logger.info(f"Creating model:{config.MODEL.TYPE}/{config.MODEL.NAME}")
     model = build_model(config)
     logger.info(str(model))
-
+    wandb.init(project="swin-ode")
+    
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     logger.info(f"number of params: {n_parameters}")
     if hasattr(model, 'flops'):
@@ -270,6 +271,10 @@ def validate(config, data_loader, model):
                 f'Acc@5 {acc5_meter.val:.3f} ({acc5_meter.avg:.3f})\t'
                 f'Mem {memory_used:.0f}MB')
     logger.info(f' * Acc@1 {acc1_meter.avg:.3f} Acc@5 {acc5_meter.avg:.3f}')
+    wandb.log({
+        "val/Acc@1": acc1_meter.avg,
+        "val/Acc@5": acc5_meter.avg,
+    })
     return acc1_meter.avg, acc5_meter.avg, loss_meter.avg
 
 
