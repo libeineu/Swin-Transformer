@@ -87,7 +87,8 @@ def main(config):
     logger.info(f"Creating model:{config.MODEL.TYPE}/{config.MODEL.NAME}")
     model = build_model(config)
     logger.info(str(model))
-    wandb.init(project="swin-ode", name=f"{config.MODEL.TYPE}/{config.MODEL.NAME}")
+    if int(os.environ["RANK"]) == 0:
+        wandb.init(project="swin-ode", name=f"{config.MODEL.TYPE}/{config.MODEL.NAME}")
     
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     logger.info(f"number of params: {n_parameters}")
