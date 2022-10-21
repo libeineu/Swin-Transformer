@@ -87,7 +87,7 @@ def main(config):
     logger.info(f"Creating model:{config.MODEL.TYPE}/{config.MODEL.NAME}")
     model = build_model(config)
     logger.info(str(model))
-    wandb.init(project="swin-ode")
+    wandb.init(project="swin-ode", name={config.MODEL.TYPE}/{config.MODEL.NAME})
     
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     logger.info(f"number of params: {n_parameters}")
@@ -271,6 +271,7 @@ def validate(config, data_loader, model):
                 f'Acc@5 {acc5_meter.val:.3f} ({acc5_meter.avg:.3f})\t'
                 f'Mem {memory_used:.0f}MB')
     logger.info(f' * Acc@1 {acc1_meter.avg:.3f} Acc@5 {acc5_meter.avg:.3f}')
+    
     if int(os.environ["RANK"]) == 0:
         wandb.log({
             "val/Acc@1": acc1_meter.avg,
