@@ -271,10 +271,11 @@ def validate(config, data_loader, model):
                 f'Acc@5 {acc5_meter.val:.3f} ({acc5_meter.avg:.3f})\t'
                 f'Mem {memory_used:.0f}MB')
     logger.info(f' * Acc@1 {acc1_meter.avg:.3f} Acc@5 {acc5_meter.avg:.3f}')
-    wandb.log({
-        "val/Acc@1": acc1_meter.avg,
-        "val/Acc@5": acc5_meter.avg,
-    })
+    if int(os.environ["RANK"]) == 0:
+        wandb.log({
+            "val/Acc@1": acc1_meter.avg,
+            "val/Acc@5": acc5_meter.avg,
+        })
     return acc1_meter.avg, acc5_meter.avg, loss_meter.avg
 
 
