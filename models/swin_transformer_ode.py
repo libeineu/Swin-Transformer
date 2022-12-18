@@ -386,7 +386,7 @@ class BasicLayer(nn.Module):
     def __init__(self, dim, input_resolution, depth, num_heads, window_size,
                  mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0.,
                  drop_path=0., norm_layer=nn.LayerNorm, downsample=None, use_checkpoint=False,
-                 fused_window_process=False, rk_step=2, learnable_type='ema'):
+                 fused_window_process=False, rk_step=2, learnable_type='ema', rk_norm=False):
 
         super().__init__()
         self.dim = dim
@@ -418,6 +418,9 @@ class BasicLayer(nn.Module):
         # RK configuration
         self.calculate_num = rk_step
         self.enc_learnable_type = learnable_type
+        self.rk_norm = rk_norm
+        self.RK_norm = nn.ModuleList(nn.LayerNorm(dim) for _ in range(self.calculate_num)) if self.rk_norm else None
+        self.residual_norm = nn.ModuleList(nn.LayerNorm(dim) for _ in range(depth)) if self.rk_norm else None
         if self.calculate_num == 2:
             if self.enc_learnable_type == 'gated':
                 self.gate_linear = nn.Linear(2 * self.dim, 1)
@@ -437,7 +440,7 @@ class BasicLayer(nn.Module):
             # to store the block input
             self.block_history.add(x)
                 
-        for blk in self.blocks:
+        for layer_idx, blk in enumerate(self.blocks):
             if self.use_checkpoint:
                 x = checkpoint.checkpoint(blk, x)
             else:
@@ -445,10 +448,17 @@ class BasicLayer(nn.Module):
                     x = self.block_history.pop()
 
                 runge_kutta_list = []
-                residual = x
+                if self.rk_norm:
+                    residual = self.residual_norm[layer_idx](x)
+                else:
+                    residual = x
                 for j in range(self.calculate_num):
                     x = blk(x)
-                    runge_kutta_list.append(x)
+                    if self.rk_norm:
+                        x = self.RK_norm[j](x)
+                        runge_kutta_list.append(x)
+                    else:
+                        runge_kutta_list.append(x)
                     if self.calculate_num == 4:
                         if j == 0 or j == 1:
                             x = residual + 1 / 2 * x
@@ -477,8 +487,15 @@ class BasicLayer(nn.Module):
                 else:
                     raise ValueError("invalid caculate num！")
 
-                if self.block_history is not None:
-                    self.block_history.add(x)
+                self.block_history.add(x)
+
+                x = self.block_history.pop()
+
+                x = blk(x)
+
+                self.block_history.update(x)
+
+                
 
         if self.block_history is not None:
             x = self.block_history.pop()
@@ -579,7 +596,7 @@ class SwinTransformerODE(nn.Module):
                  window_size=7, mlp_ratio=4., qkv_bias=True, qk_scale=None,
                  drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1,
                  norm_layer=nn.LayerNorm, ape=False, patch_norm=True,
-                 use_checkpoint=False, fused_window_process=False, rk_step=2, learnable_type='ema', **kwargs):
+                 use_checkpoint=False, fused_window_process=False, rk_step=2, learnable_type='ema', rk_norm=False, **kwargs):
         super().__init__()
 
         self.num_classes = num_classes
@@ -626,7 +643,8 @@ class SwinTransformerODE(nn.Module):
                                use_checkpoint=use_checkpoint,
                                fused_window_process=fused_window_process,
                                rk_step=rk_step,
-                               learnable_type=learnable_type)
+                               learnable_type=learnable_type,
+                               rk_norm=rk_norm)
             self.layers.append(layer)
 
         self.norm = norm_layer(self.num_features)

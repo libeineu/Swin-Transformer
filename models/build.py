@@ -91,7 +91,8 @@ def build_model(config, is_pretrain=False):
                                 use_checkpoint=config.TRAIN.USE_CHECKPOINT,
                                 fused_window_process=config.FUSED_WINDOW_PROCESS,
                                 rk_step=config.MODEL.SWINODE.RK_STEP,
-                                learnable_type=config.MODEL.SWINODE.LEARNABLE_TYPE)
+                                learnable_type=config.MODEL.SWINODE.LEARNABLE_TYPE,
+                                rk_norm=config.MODEL.SWINODE.RK_NORM)
     elif model_type == 'swinv2':
         model = SwinTransformerV2(img_size=config.DATA.IMG_SIZE,
                                   patch_size=config.MODEL.SWINV2.PATCH_SIZE,

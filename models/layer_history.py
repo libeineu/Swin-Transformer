@@ -43,13 +43,18 @@ class LearnableDenseLayerHistory(BaseLayerHistory):
         self.weight = nn.Parameter(torch.Tensor(self.layer_num, self.layer_num).fill_(1.0).tril())
         self.weight.data = self.weight.data / self.weight.data.sum(1, keepdim=True)
 
+        self.weight_c = nn.Parameter(torch.Tensor(self.layer_num, self.layer_num).fill_(1.0).tril())
+        self.weight_c.data = self.weight_c.data / self.weight_c.data.sum(1, keepdim=True)
+        self.rouge_predictions_norm = nn.ModuleList(LayerNorm(block_dim) for _ in range(block_depth))
+
+
     def extra_repr(self):
         return 'n_layers={layer_num}, '.format(**self.__dict__)
 
     def add(self, layer):
         
         assert self.normalize_before is True, "This dlcl only supports the pre-Norm Swin Transformer"
-        layer = self.layer_norms[self.layer_idx](layer)
+        layer = self.rouge_predictions_norm[self.layer_idx](layer)
         self.layer_idx += 1
 
         self.layers.append(layer)
@@ -64,6 +69,20 @@ class LearnableDenseLayerHistory(BaseLayerHistory):
         self.sum = None
         self.layer_idx = 0
         self.layers = []
+
+    def update(self, layer):
+
+        # update the layer presentation
+
+        self.layers[self.layer_idx - 1] = self.layer_norms[self.layer_idx - 2](layer)
+
+
+    def refine(self):
+        assert len(self.layers) > 0
+        ret = (torch.stack(self.layers, 0) * self.weight_c[self.layer_idx - 1, : self.layer_idx].view(-1, 1, 1, 1)).sum(0)
+
+        return ret
+
 
 
 def LayerNorm(normalized_shape, eps=1e-5, elementwise_affine=True, export=False):
