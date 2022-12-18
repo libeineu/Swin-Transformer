@@ -435,17 +435,17 @@ class BasicLayer(nn.Module):
     def forward(self, x):
         
         # linear multi-step method from ODE perspective, aka DLCL.
-        if self.block_history is not None:
-            self.block_history.clean()
-            # to store the block input
-            self.block_history.add(x)
+        assert self.block_history is not None
+        self.block_history.clean()
+        # to store the block input
+        self.block_history.add(x)
                 
         for layer_idx, blk in enumerate(self.blocks):
             if self.use_checkpoint:
                 x = checkpoint.checkpoint(blk, x)
             else:
-                if self.block_history is not None:
-                    x = self.block_history.pop()
+
+                x = self.block_history.pop()
 
                 runge_kutta_list = []
                 if self.rk_norm:
@@ -494,8 +494,6 @@ class BasicLayer(nn.Module):
                 x = blk(x)
 
                 self.block_history.update(x)
-
-                
 
         if self.block_history is not None:
             x = self.block_history.pop()
