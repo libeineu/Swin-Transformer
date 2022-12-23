@@ -12,5 +12,10 @@ MODEL:
     LEARNABLE_TYPE : 'ema' # ['gated', 'ema', 'standard']
     RK_NORM: False
 TRAIN:
-  BASE_LR: 5e-4
-  WARMUP_EPOCHS: 20
+  EPOCHS: 100
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 1e-8
+  BASE_LR: 7e-05
+  WARMUP_LR: 2e-08
+  MIN_LR: 2e-07
+
